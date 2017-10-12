@@ -23,18 +23,19 @@ public:
 
     }
 
-    static void Parser(QString fileName)
+    static QVector<QString> Parser(QString fileName)
     {
         QFile file(fileName);
 
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
                 return;
 
-        QList<QString> lines = new QList<QString>();
+        QVector<QString> lines();
         while(!file.atEnd())
         {
             QString line = file.readLine();
-            if (line.trimmed()[0] != '#'){
+            if (line.trimmed()[0] != '#')
+            {
                 lines << line;
             }
         }
@@ -46,14 +47,16 @@ public:
 class Vertex
 {
 public:
-    double x, y, z;
+    float x, y, z;
 
-    Vertex() {
+    Vertex()
+    {
         x = 0;
         y = 0;
         z = 0;
     }
-    Vertex(double x, double y, double z) : base() {
+    Vertex(float x, float y, float z)
+    {
         this->x = x;
         this->y = y;
         this->z = z;
@@ -61,13 +64,13 @@ public:
 
 };
 
-class NormalVector : Vertex//
+class NormalVector//
 {
 public:
-    double x, y, z;
+    float x, y, z;
 
-    NormalVector() : base() {}
-    NormalVector(double x, double y, double z) : base(x, y, z)
+    NormalVector(){}
+    NormalVector(float x, float y, float z)
     {
         this->x = x;
         this->y = y;
@@ -78,7 +81,7 @@ public:
 class TextureCoord//
 {
 public:
-    double u, v, w;
+    float u, v, w;
 
     TextureCoord() {
         u = 0;
@@ -86,56 +89,99 @@ public:
         w = 0;
     }
 
-    TextureCoord(double u, double v, double w) : base(){
+    TextureCoord(float u, float v, float w){
         this->u = u;
         this->v = v;
         this->w = w;
     }
 };
 
-class Model
+class Face
 {
 public:
-    QList<Vertex> vertexModel;
-    QList<NormalVector> normalVectorModel;
-    QList<TextureCoord> textureCoordModel;
+    QList<int> vertexIndex();
+    QList<int> textureCoordIndex();
+    QList<int> normalVectorIndex();
+
+    Face()
+    {}
+};
+
+class Model
+{
+private:
+    QVector<Vertex> vertexModel();
+    QVector<NormalVector> normalVectorModel();
+    QVector<TextureCoord> textureCoordModel();
+
+public:
 
     Model(){
-        vertexModel = new QList<Vertex>();
-        normalVectorModel = new QList<NormalVector>();
-        textureCoordModel = new QList<TextureCoord>();
+//        vertexModel = new QList<Vertex>();
+//        normalVectorModel = new QList<NormalVector>();
+//        textureCoordModel = new QList<TextureCoord>();
     }
 
     void CreateVertexModel(QString fileName){
-        QList<QString> vertexList = OBJParse.Parser(fileName);
+        QVector<QString> vertexList = OBJParse.Parser(fileName);
         int length = vertexList.count();
 
         for (int i = 0; i < length; i++)
         {
             QStringList vertexStr = vertexList[i].split(' ',  QString::SkipEmptyParts);
-            switch (vertexStr[0])
-            case "v":
+            if(vertexStr[0] == "v")
             {
-                Vertex vertex = new Vertex(vertexStr[1].toDouble(),vertexStr[2].toDouble(),vertexStr[3].toDouble());
+                Vertex vertex = new Vertex(vertexStr[1].toFloat(),
+                        vertexStr[2].toFloat(),
+                        vertexStr[3].toFloat());
                 vertexModel << vertex;
-                break;
             }
-            case "vn":
+            else if(vertexStr[0] == "vn")
             {
-                NormalVector normalVector = new NormalVector(vertexStr[1].toDouble(),vertexStr[2].toDouble(),vertexStr[3].toDouble());
+                NormalVector normalVector = new NormalVector(vertexStr[1].toFloat(),
+                        vertexStr[2].toFloat(),
+                        vertexStr[3].toFloat());
                 normalVectorModel << normalVector;
-                break;
             }
-            case "vt":
+            else if(vertexStr[0] == "vt")
             {
-                TextureCoord textureV = new TextureCoord(vertexStr[1].toDouble(),vertexStr[2].toDouble(),
-                        vertexStr[3].toDouble() == null ? 0 : vertexStr[3].toDouble());
+                TextureCoord textureV = new TextureCoord(vertexStr[1].toFloat(),
+                        vertexStr[2].toFloat(),
+                        vertexStr.count() == 3 ? 0 : vertexStr[3].toFloat());
                 textureCoordModel << textureV;
-                break;
             }
-            case "f"://см определение сторон
+            else if(vertexStr[0] == "f")
             {
-                break;
+                Face face = new Face();
+                for (int j = 1; j < vertexStr.count(); j++)
+                {
+                    QStringList indexes = vertexStr[j].split('/');
+                    switch (indexes.count()) {
+                    case 1:
+                    {
+                        face.vertexIndex() << indexes[0];
+                        break;
+                    }
+                    case 2:
+                    {
+                        face.vertexIndex() << indexes[0];
+                        face.textureCoordIndex() << indexes[1];
+                        break;
+                    }
+                    case 3:
+                    {
+                        face.vertexIndex() << indexes[0];
+                        if (indexes[1] != "")
+                        {
+                            face.textureCoordIndex() << indexes[1];
+                        }
+                        face.normalVectorIndex() << indexes[2];
+                        break;
+                    }
+                    default:
+                        break;
+                    }
+                }
             }
         }
     }
